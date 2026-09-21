@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymwolf-v6';
+const CACHE_NAME = 'gymwolf-v7';
 const PRECACHE_URLS = [
   './',
   './index.html',

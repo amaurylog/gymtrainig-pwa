@@ -493,6 +493,16 @@ async function renderRoute() {
   }
 }
 
+async function refreshTodaySilently() {
+  if (todayRoute() !== 'hoy') return;
+  const view = document.getElementById('view');
+  if (!view) return;
+  const scrollY = window.scrollY;
+  await renderTodayPage(view, { navigate, refresh: renderRoute });
+  await updateChrome();
+  window.scrollTo({ top: scrollY, behavior: 'auto' });
+}
+
 function attachShellEvents() {
   document.body.addEventListener('click', (event) => {
     const actionBtn = event.target.closest?.('#global-action');
@@ -569,9 +579,10 @@ async function boot() {
     navigate('inicio');
   }
   document.addEventListener('gw:sesion-creada', () => {
-    if (todayRoute() === 'hoy') {
-      renderRoute();
-    }
+    refreshTodaySilently();
+  });
+  document.addEventListener('gw:sesion-actualizada', () => {
+    refreshTodaySilently();
   });
   await updateChrome();
   await renderRoute();
