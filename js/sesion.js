@@ -127,6 +127,11 @@ function renderTimer(session) {
 function chooseDayModal(routine, currentId) {
   return new Promise((resolve) => {
     let settled = false;
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        finish(null);
+      }
+    };
     const dayCards = (routine?.dias || []).map((day) => {
       const selected = day.id === currentId;
       return `
@@ -157,6 +162,9 @@ function chooseDayModal(routine, currentId) {
     const selectedCard = () => root?.querySelector('.routine-card[aria-checked="true"]');
     const close = () => {
       if (root) root.innerHTML = '';
+      document.body.classList.remove('modal-abierto');
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleEscape);
     };
     const finish = (value) => {
       if (settled) return;
@@ -182,18 +190,18 @@ function chooseDayModal(routine, currentId) {
         card.setAttribute('aria-checked', 'true');
       });
     });
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        document.removeEventListener('keydown', handleEscape);
-        finish(null);
-      }
-    };
     document.addEventListener('keydown', handleEscape);
   });
 }
 
 async function startChosenRoutine(routine, currentDayId) {
   const selectedDayId = await chooseDayModal(routine, currentDayId);
+  document.body.classList.remove('modal-abierto');
+  document.body.style.overflow = '';
+  const modalRoot = document.getElementById('modal-root');
+  if (modalRoot && modalRoot.children.length === 0) {
+    modalRoot.innerHTML = '';
+  }
   if (!selectedDayId) return null;
   const session = await startTodaySession(routine.id, { force: true, dayId: selectedDayId });
   toast('Sesión iniciada', 'El día elegido quedó registrado.', 'success');

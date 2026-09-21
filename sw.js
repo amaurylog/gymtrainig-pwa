@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymwolf-v7';
+const CACHE_NAME = 'gymwolf-v12';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -43,6 +43,12 @@ self.addEventListener('install', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(async (keys) => {
@@ -57,7 +63,12 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  const isLocalStaticAsset = url.origin === self.location.origin && (request.destination === 'script' || request.destination === 'style');
+  const isLocalStaticAsset = url.origin === self.location.origin && (
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css')
+  );
 
   if (request.mode === 'navigate') {
     event.respondWith(

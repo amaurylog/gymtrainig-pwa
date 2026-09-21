@@ -491,15 +491,26 @@ async function renderRoute() {
   if (settingsBtn) {
     settingsBtn.onclick = () => navigate('ajustes');
   }
+  const noRootModal = (document.getElementById('modal-root')?.children.length || 0) === 0;
+  const noInlineModal = document.querySelectorAll('.modal:not([hidden])').length === 0;
+  if (noRootModal && noInlineModal) {
+    document.body.classList.remove('modal-abierto');
+  }
 }
 
 async function refreshTodaySilently() {
-  if (todayRoute() !== 'hoy') return;
+  const route = todayRoute();
+  if (!(route === 'hoy' || route.startsWith('hoy?'))) return;
   const view = document.getElementById('view');
   if (!view) return;
   const scrollY = window.scrollY;
   await renderTodayPage(view, { navigate, refresh: renderRoute });
   await updateChrome();
+  const noRootModal = (document.getElementById('modal-root')?.children.length || 0) === 0;
+  const noInlineModal = document.querySelectorAll('.modal:not([hidden])').length === 0;
+  if (noRootModal && noInlineModal) {
+    document.body.classList.remove('modal-abierto');
+  }
   window.scrollTo({ top: scrollY, behavior: 'auto' });
 }
 
@@ -583,14 +594,35 @@ async function boot() {
   });
   document.addEventListener('gw:sesion-actualizada', () => {
     refreshTodaySilently();
+    setTimeout(() => {
+      refreshTodaySilently();
+    }, 60);
   });
   await updateChrome();
   await renderRoute();
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => registration.unregister().catch(() => {}));
+    navigator.serviceWorker.register('./sw.js').then((registration) => {
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      registration.addEventListener('updatefound', () => {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            worker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
     }).catch(() => {});
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   }
 }
 

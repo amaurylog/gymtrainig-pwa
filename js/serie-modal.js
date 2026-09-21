@@ -315,6 +315,9 @@ export async function guardarSerie() {
   await upsertSession(sesion);
   document.dispatchEvent(new CustomEvent('gw:sesion-actualizada', { detail: { sesionId: sesion.id } }));
   cerrarModalSerie();
+  setTimeout(() => {
+    document.dispatchEvent(new CustomEvent('gw:sesion-actualizada', { detail: { sesionId: sesion.id } }));
+  }, 0);
   toast(`Serie ${nuevaSerie.idx + 1} guardada · ${nuevaSerie.peso ?? '—'} kg × ${reps ?? '—'} reps`, 'success');
 }
 
